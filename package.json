@@ -1,0 +1,21 @@
+{
+  "name": "discordts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/index.js",
+  "type": "commonJS",
+  "scripts": {
+    "tsc": "rm -rf build/ && tsc",
+    "ts": "rm -rf build/ && tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ArfaLuthfy",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "colors": "^1.4.0",
+    "discord-cooldown": "file:../Discord-Cooldown/discord-cooldown-1.0.0.tgz",
+    "discord.js": "^14.6.0",
+    "moment": "^2.29.4"
+  }
+}

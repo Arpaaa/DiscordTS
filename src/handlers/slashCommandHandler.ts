@@ -1,0 +1,79 @@
+import {
+    Collection,
+    REST,
+    RESTPostAPIApplicationCommandsJSONBody,
+    Routes,
+} from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import { slashCommandInterface } from '../typings/types';
+import logger from '../utils/logger';
+import { TOKEN, CLIENT_ID, GUILD_ID } from '../config/config.json';
+import chalk from 'chalk';
+
+logger.info('Slash Command Handler was loaded...', '\n');
+
+const globalCommandsData: RESTPostAPIApplicationCommandsJSONBody[] = [];
+const guildCommandsData: RESTPostAPIApplicationCommandsJSONBody[] = [];
+export const slashCommands: Collection<string, slashCommandInterface> =
+    new Collection();
+
+const slashCommandsPath: string = path.join(
+    __dirname,
+    '..',
+    'commands',
+    'slashCommands'
+);
+
+const slashCommandsFiles = fs
+    .readdirSync(slashCommandsPath)
+    .filter((file) => file.endsWith('.js'));
+
+logger.info(`Slash Command Handler - Reading ${chalk.greenBright(
+    slashCommandsFiles.length
+)} files:
+command: ${chalk.greenBright(slashCommandsFiles)}`);
+
+for (const file of slashCommandsFiles) {
+    const slashCommandData: slashCommandInterface = require(path.join(
+        slashCommandsPath,
+        file
+    ));
+    if (slashCommandData.isGlobalCommand)
+        globalCommandsData.push(slashCommandData.data.toJSON());
+    if (!slashCommandData.isGlobalCommand)
+        guildCommandsData.push(slashCommandData.data.toJSON());
+
+    slashCommands.set(slashCommandData.data.name, slashCommandData);
+}
+
+// Register slash command
+const rest: REST = new REST({ version: '10' }).setToken(TOKEN);
+
+(async () => {
+    try {
+        logger.info(
+            `Slash Command Handler - Refreshing ${chalk.greenBright(
+                slashCommands.size
+            )} slash commands (/)... `
+        );
+        logger.info(`Slash Command Handler - With ${chalk.greenBright(
+            `${globalCommandsData.length} global commands`
+        )} and
+     ${chalk.greenBright(`${guildCommandsData.length} guild commands`)}`);
+
+        await rest.put(Routes.applicationCommands(CLIENT_ID), {
+            body: globalCommandsData,
+        });
+        await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+            body: guildCommandsData,
+        });
+
+        logger.info(`Slash Command Handler - Succesfully reloading:
+${chalk.greenBright(
+    `${globalCommandsData.length} global commands`
+)} and ${chalk.greenBright(`${guildCommandsData.length} guild commands`)}`);
+    } catch (error) {
+        logger.error(error);
+    }
+})();
